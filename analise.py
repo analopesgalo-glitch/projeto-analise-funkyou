@@ -30,7 +30,6 @@ com_filtro_funk_you = df[coluna_bloco].str.contains(padrao_funk_you, case=False,
 total_recorrentes_funk_you = com_filtro_funk_you.sum()
 
 # EMISSÃO DO RELATÓRIO DE VOLUMETRIA
-# ==========================================
 print("=" * 50)
 print("       RELATÓRIO DE DIAGNÓSTICO INICIAL (BLOCOS)       ")
 print("=" * 50)
@@ -40,7 +39,46 @@ print(f"3. Respostas preenchidas (Já desfilaram): {total_respondidos} ({ (total
 print(f"4. Alunos retidos/recorrentes (Mencionaram Funk You): {total_recorrentes_funk_you}")
 print("-" * 50)
 
-# 4. Amostra bruta de conferência visual das 10 primeiras respostas preenchidas
-print("AMOSTRA VISUAL DAS RESPOSTAS PREENCHIDAS:")
-print(df[df[coluna_bloco].notna()][coluna_bloco].head(10))
-print("=" * 50)
+# GRÁFICO DE DIAGNÓSTICO (PIZZA)
+labels = ['Nunca desfilou', 'Apenas Funk You', 'Outros Blocos']
+# Lógica simples para categorizar:
+# 1. Nunca desfilou = NaN
+# 2. Apenas Funk You = Contém Funk You e nada mais
+# 3. Outros blocos = Contém outros blocos (com ou sem Funk You)
+# (Vamos simplificar para o gráfico de pizza inicial)
+
+total = len(df)
+
+# LÓGICA DE CLASSIFICAÇÃO EXCLUSIVA PARA O GRÁFICO
+
+# 1. Nunca desfilou (NaN)
+nunca_desfilou = df[coluna_bloco].isna().sum()
+
+# 2. Criamos máscaras booleanas para identificar o conteúdo
+contem_funk = df[coluna_bloco].str.contains(r'(FUNK\s*YOU|FUNKU|FUNK\s*U|FY)', case=False, na=False)
+contem_outros = df[coluna_bloco].str.contains(r'[^FUNKYOUS\s,]+', case=False, na=True)
+
+# 3. Classificação Exclusiva:
+# Apenas Funk You: Contém Funk E NÃO contém outros
+apenas_funk_you = df[contem_funk & ~contem_outros].shape[0]
+
+# Com outros: Contém outros blocos (com ou sem Funk You)
+com_outros = df[contem_outros & df[coluna_bloco].notna()].shape[0]
+
+# 4. Definição dos tamanhos para o gráfico
+sizes = [nunca_desfilou, apenas_funk_you, com_outros]
+
+colors = ['#ff9999', '#66b3ff', '#99ff99']
+
+plt.figure(figsize=(8, 8))
+plt.pie(sizes, labels=labels, autopct='%1.1f%%', colors=colors, startangle=140)
+plt.title('Distribuição do Perfil de Experiência dos Alunos')
+
+import os
+
+# Cria a pasta 'graficos' se ela não existir
+if not os.path.exists('graficos'):
+    os.makedirs('graficos')
+
+plt.savefig('graficos/diagnostico_inicial.png') # Salva para o portfólio!
+plt.show()
